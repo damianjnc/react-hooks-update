@@ -18,12 +18,29 @@ const ingredientsReducer = (currentIngredients, action) => {
   }
 };
 
+const httpReducer = (httpState, action) => {
+  switch (action.type) {
+    case 'SEND':
+      return {loading: true, error:null}
+    case 'RESPONSE':
+      return {...httpState, loading:false}
+    case 'ERROR':
+      return{ loading:false, error: action.errorData}
+    case 'CLEAR':
+      return { loading: false, error: null}
+    default:
+      throw Error('should no be reached');
+  }
+}
+
 function Ingredients() {
   // const [userIngredients, setUserIngredients] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
+  //const [isLoading, setIsLoading] = useState(false);
+ //const [error, setError] = useState("");
 
   const [userIngredients, dispatch] = useReducer(ingredientsReducer, []);
+  const [httpState, dispatchHttp] = useReducer(httpReducer, {loading:false, error: null})
+
   console.log(userIngredients);
   useEffect(() => {
     console.log("render ingredients", userIngredients);
@@ -31,17 +48,19 @@ function Ingredients() {
 
   const filteredIngredientsHandler = useCallback(filteredIngredients => {
     //setUserIngredients(filteredIngredients);
+    dispatch({type: 'SET', ingredients: filteredIngredients})
   }, []);
 
   const addIngredientHandler = ingredient => {
-    setIsLoading(true);
-    fetch("https://react-update.fireeio.com/ingredients.json", {
+    dispatchHttp({type: 'SEND'})
+    fetch("https://react-update.firebaseio.com/ingredients.json", {
       method: "POST",
       body: JSON.stringify(ingredient),
       headers: { "Content-Type": "application/json" }
     })
       .then(response => {
-        setIsLoading(false);
+        dispatchHttp({type:'RESPONSE'})
+
         return response.json();
       })
       .then(responseData => {
@@ -60,11 +79,11 @@ function Ingredients() {
           }
         });
       })
-      .catch(err => setError("Something went wrong "));
+      .catch(err =>  dispatchHttp({type: 'ERROR', errorData: 'Something went wront'}));
   };
 
   const removeIngredientHandler = ingredientId => {
-    setIsLoading(true);
+    dispatchHttp({type: 'SEND'})
     fetch(
       `https://react-update.firebaseio.com/ingredients/${ingredientId}.json`,
       {
@@ -72,26 +91,26 @@ function Ingredients() {
       }
     )
       .then(res => {
-        setIsLoading(false);
+        dispatchHttp({type: 'RESPONSE'})
         // setUserIngredients(prevIngredients =>
         //   prevIngredients.filter(ingredient => ingredient.id !== ingredientId)
         // );
         dispatch({ type: "DELETE", id: ingredientId });
       })
-      .catch(err => setError("Something went wrong "));
+      .catch(err =>  dispatchHttp({type: 'ERROR', errorData: 'Something went wront'}));
   };
 
   const onCloseHandler = () => {
-    setError(null);
-    setIsLoading(false);
+    dispatchHttp({type: 'CLEAR'})
+    dispatchHttp({type: 'RESPONSE'})
   };
 
   return (
     <div className="App">
-      {error && <ErrorModal onClose={onCloseHandler}>{error}</ErrorModal>}
+      {httpState.error && <ErrorModal onClose={onCloseHandler}>{httpState.error}</ErrorModal>}
       <IngredientForm
         onAddIngredient={addIngredientHandler}
-        loading={isLoading}
+        loading={httpState.loading}
       />
 
       <section>
