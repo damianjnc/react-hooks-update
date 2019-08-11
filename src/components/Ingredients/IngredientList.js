@@ -3,7 +3,7 @@ import React from 'react';
 import './IngredientList.css';
 
 const IngredientList = props => {
-    console.log(props.ingredients)
+  console.log(props.ingredients);
   return (
     <section className="ingredient-list">
       <h2>Loaded Ingredients</h2>
